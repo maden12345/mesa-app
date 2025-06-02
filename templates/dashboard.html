@@ -33,13 +33,20 @@
                         🔄 Durum kontrol ediliyor...
                     </div>
                     
+                    <div class="friendship-status" data-user="{{ user }}" style="margin-bottom: 15px; min-height: 25px;">
+                        <span class="status-text" style="font-size: 12px; color: #666;">🔄 Durum kontrol ediliyor...</span>
+                    </div>
+                    
                     <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                         <a href="{{ url_for('profile', username=user) }}" class="btn btn-secondary" style="font-size: 13px; padding: 8px 16px;">
                             👤 Profil
                         </a>
-                        <a href="{{ url_for('chat', recipient=user) }}" class="btn" style="font-size: 13px; padding: 8px 16px;">
+                        <button class="friendship-btn" data-user="{{ user }}" style="font-size: 13px; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; background: #ccc; color: white;">
+                            ⏳ Yükleniyor...
+                        </button>
+                        <button class="message-btn" data-user="{{ user }}" style="font-size: 13px; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
                             💬 Mesaj
-                        </a>
+                        </button>
                     </div>
                 </div>
             {% endfor %}
@@ -54,6 +61,34 @@
             </button>
         </div>
     {% endif %}
+</div>
+
+<div class="card">
+    <h3 style="background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 25px; font-size: 1.5rem;">
+        🤝 Arkadaşlık Yönetimi
+    </h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-bottom: 30px;">
+        <div class="friend-requests-section">
+            <h4 style="color: #2c3e50; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                📬 Gelen İstekler <span id="request-count" style="background: #e74c3c; color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px;">0</span>
+            </h4>
+            <div id="friend-requests" style="max-height: 200px; overflow-y: auto;"></div>
+        </div>
+        
+        <div>
+            <h4 style="color: #2c3e50; margin-bottom: 15px;">⚙️ Mesaj Ayarları</h4>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="allow-messages-from-all" style="transform: scale(1.2);">
+                    <span>Herkesten mesaj almaya izin ver</span>
+                </label>
+                <p style="font-size: 12px; color: #666; margin-top: 10px; margin-bottom: 0;">
+                    Bu ayar kapalıysa sadece arkadaşlarınızdan mesaj alabilirsiniz.
+                </p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="card" style="background: linear-gradient(135deg, rgba(102,126,234,0.05), rgba(118,75,162,0.05));">
@@ -86,6 +121,8 @@
 </div>
 
 <script>
+let friendshipData = {};
+
 function updateAllUserStatuses() {
     const statusIndicators = document.querySelectorAll('.status-indicator');
     const statusTexts = document.querySelectorAll('.user-status');
@@ -132,11 +169,167 @@ function updateAllUserStatuses() {
     });
 }
 
-// Load statuses on page load
-updateAllUserStatuses();
+function loadFriendshipData() {
+    fetch('/get_friendship_data')
+        .then(response => response.json())
+        .then(data => {
+            friendshipData = data;
+            updateFriendshipButtons();
+            updateFriendRequests();
+            updateMessageSettings();
+        });
+}
 
-// Update statuses every 15 seconds
+function updateFriendshipButtons() {
+    const friendshipBtns = document.querySelectorAll('.friendship-btn');
+    const friendshipStatuses = document.querySelectorAll('.friendship-status');
+    
+    friendshipBtns.forEach((btn, index) => {
+        const username = btn.getAttribute('data-user');
+        const statusDiv = friendshipStatuses[index];
+        const statusText = statusDiv.querySelector('.status-text');
+        
+        if (friendshipData.friends && friendshipData.friends.includes(username)) {
+            btn.textContent = '👥 Arkadaş';
+            btn.style.background = '#27ae60';
+            btn.onclick = () => removeFriend(username);
+            statusText.textContent = '✅ Arkadaşınız';
+            statusText.style.color = '#27ae60';
+        } else if (friendshipData.sent_requests && friendshipData.sent_requests.includes(username)) {
+            btn.textContent = '⏳ İstek Gönderildi';
+            btn.style.background = '#f39c12';
+            btn.disabled = true;
+            statusText.textContent = '📤 Arkadaşlık isteği gönderildi';
+            statusText.style.color = '#f39c12';
+        } else if (friendshipData.received_requests && friendshipData.received_requests.includes(username)) {
+            btn.textContent = '📬 İstek Geldi';
+            btn.style.background = '#3498db';
+            btn.onclick = () => acceptFriendRequest(username);
+            statusText.textContent = '📬 Size arkadaşlık isteği gönderdi';
+            statusText.style.color = '#3498db';
+        } else {
+            btn.textContent = '➕ Arkadaş Ekle';
+            btn.style.background = '#667eea';
+            btn.disabled = false;
+            btn.onclick = () => sendFriendRequest(username);
+            statusText.textContent = '👋 Arkadaş ekleyebilirsiniz';
+            statusText.style.color = '#666';
+        }
+    });
+}
+
+function updateFriendRequests() {
+    const requestsDiv = document.getElementById('friend-requests');
+    const requestCount = document.getElementById('request-count');
+    
+    if (!friendshipData.received_requests || friendshipData.received_requests.length === 0) {
+        requestsDiv.innerHTML = '<p style="color: #666; font-style: italic;">Gelen arkadaşlık isteği yok</p>';
+        requestCount.textContent = '0';
+        return;
+    }
+    
+    requestCount.textContent = friendshipData.received_requests.length;
+    
+    requestsDiv.innerHTML = friendshipData.received_requests.map(username => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ddd;">
+            <span style="font-weight: 600;">${username}</span>
+            <div style="display: flex; gap: 5px;">
+                <button onclick="acceptFriendRequest('${username}')" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">✅ Kabul Et</button>
+                <button onclick="rejectFriendRequest('${username}')" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">❌ Reddet</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateMessageSettings() {
+    // Kullanıcı verilerini almak için ayrı bir fetch gerekebilir
+    // Şimdilik varsayılan olarak true kabul edelim
+}
+
+function sendFriendRequest(username) {
+    fetch('/send_friend_request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message || data.error);
+        if (data.success) loadFriendshipData();
+    });
+}
+
+function acceptFriendRequest(username) {
+    fetch('/accept_friend_request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message || data.error);
+        if (data.success) loadFriendshipData();
+    });
+}
+
+function rejectFriendRequest(username) {
+    fetch('/reject_friend_request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message || data.error);
+        if (data.success) loadFriendshipData();
+    });
+}
+
+function removeFriend(username) {
+    if (!confirm(`${username} adlı kişiyi arkadaş listenizden çıkarmak istediğinizden emin misiniz?`)) return;
+    
+    fetch('/remove_friend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message || data.error);
+        if (data.success) loadFriendshipData();
+    });
+}
+
+// Message button functionality
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('message-btn')) {
+        const username = e.target.getAttribute('data-user');
+        window.location.href = `/chat/${username}`;
+    }
+});
+
+// Message settings
+document.getElementById('allow-messages-from-all').addEventListener('change', function() {
+    fetch('/update_message_settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allow_messages_from_all: this.checked })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Mesaj ayarları güncellendi!');
+        }
+    });
+});
+
+// Load all data on page load
+updateAllUserStatuses();
+loadFriendshipData();
+
+// Update periodically
 setInterval(updateAllUserStatuses, 15000);
+setInterval(loadFriendshipData, 10000);
 
 // Add smooth animations
 document.addEventListener('DOMContentLoaded', function() {

@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block title %}{{ profile_user }} - Profil{% endblock %}
@@ -9,7 +8,7 @@
         <h2 style="color: #667eea; margin: 0;">{{ profile_user }}'in Profili</h2>
         <a href="{{ url_for('dashboard') }}" class="btn">← Geri Dön</a>
     </div>
-    
+
     <div style="display: flex; gap: 30px; align-items: flex-start;">
         <div style="text-align: center;">
             {% if user_info.profile_photo %}
@@ -21,34 +20,118 @@
                     <span style="font-size: 48px; color: #999;">👤</span>
                 </div>
             {% endif %}
-            
+
             {% if is_own_profile %}
                 <div style="margin-top: 15px;">
                     <a href="{{ url_for('edit_profile') }}" class="btn" style="font-size: 14px; padding: 8px 16px;">Profili Düzenle</a>
                 </div>
             {% endif %}
         </div>
-        
+
         <div style="flex: 1;">
             <h3 style="color: #333; margin-bottom: 10px;">{{ profile_user }}</h3>
             <p style="color: #666; margin-bottom: 15px;"><strong>E-posta:</strong> {{ user_info.email }}</p>
-            
+
             {% if user_info.bio %}
                 <div style="margin-bottom: 20px;">
                     <h4 style="color: #667eea; margin-bottom: 10px;">Hakkında</h4>
                     <p style="color: #666; line-height: 1.6; background: #f9f9f9; padding: 15px; border-radius: 8px;">{{ user_info.bio }}</p>
                 </div>
             {% endif %}
-            
+
             <p style="color: #999; font-size: 14px;">
                 <strong>Katılma Tarihi:</strong> {{ user_info.created_at[:10] }}
             </p>
-            
+
             {% if not is_own_profile %}
-                <div style="margin-top: 20px;">
-                    <a href="{{ url_for('chat', recipient=profile_user) }}" class="btn">💬 Mesaj Gönder</a>
-                </div>
-            {% endif %}
+        <div style="text-align: center; margin-top: 30px;">
+            <div id="friendship-actions" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button id="friendship-btn" class="btn" style="font-size: 16px; padding: 12px 25px;">
+                    ⏳ Yükleniyor...
+                </button>
+                <button id="message-btn" class="btn" style="font-size: 16px; padding: 12px 25px;">
+                    💬 Mesaj Gönder
+                </button>
+            </div>
+        </div>
+
+        <script>
+        const profileUser = '{{ profile_user }}';
+
+        function loadProfileFriendshipStatus() {
+            fetch('/get_friendship_data')
+                .then(response => response.json())
+                .then(data => {
+                    const friendshipBtn = document.getElementById('friendship-btn');
+                    const messageBtn = document.getElementById('message-btn');
+
+                    if (data.friends && data.friends.includes(profileUser)) {
+                        friendshipBtn.textContent = '👥 Arkadaş';
+                        friendshipBtn.style.background = '#27ae60';
+                        friendshipBtn.onclick = () => removeFriend(profileUser);
+                    } else if (data.sent_requests && data.sent_requests.includes(profileUser)) {
+                        friendshipBtn.textContent = '⏳ İstek Gönderildi';
+                        friendshipBtn.style.background = '#f39c12';
+                        friendshipBtn.disabled = true;
+                    } else if (data.received_requests && data.received_requests.includes(profileUser)) {
+                        friendshipBtn.textContent = '📬 İsteği Kabul Et';
+                        friendshipBtn.style.background = '#3498db';
+                        friendshipBtn.onclick = () => acceptFriendRequest(profileUser);
+                    } else {
+                        friendshipBtn.textContent = '➕ Arkadaş Ekle';
+                        friendshipBtn.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+                        friendshipBtn.disabled = false;
+                        friendshipBtn.onclick = () => sendFriendRequest(profileUser);
+                    }
+
+                    messageBtn.onclick = () => window.location.href = `/chat/${profileUser}`;
+                });
+        }
+
+        function sendFriendRequest(username) {
+            fetch('/send_friend_request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: username })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || data.error);
+                if (data.success) loadProfileFriendshipStatus();
+            });
+        }
+
+        function acceptFriendRequest(username) {
+            fetch('/accept_friend_request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: username })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || data.error);
+                if (data.success) loadProfileFriendshipStatus();
+            });
+        }
+
+        function removeFriend(username) {
+            if (!confirm(`${username} adlı kişiyi arkadaş listenizden çıkarmak istediğinizden emin misiniz?`)) return;
+
+            fetch('/remove_friend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: username })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || data.error);
+                if (data.success) loadProfileFriendshipStatus();
+            });
+        }
+
+        loadProfileFriendshipStatus();
+        </script>
+    {% endif %}
         </div>
     </div>
 </div>

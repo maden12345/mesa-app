@@ -12,6 +12,7 @@ app.secret_key = 'chatnell-secret-key-2024'
 # Data storage files
 USERS_FILE = 'users.json'
 MESSAGES_FILE = 'messages.json'
+FRIENDSHIPS_FILE = 'friendships.json'
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -48,6 +49,35 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def load_friendships():
+    if os.path.exists(FRIENDSHIPS_FILE):
+        with open(FRIENDSHIPS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {}
+
+def save_friendships(friendships):
+    with open(FRIENDSHIPS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(friendships, f, ensure_ascii=False, indent=2)
+
+def get_user_friends(username):
+    friendships = load_friendships()
+    return friendships.get(username, {'friends': [], 'sent_requests': [], 'received_requests': []})
+
+def are_friends(user1, user2):
+    user1_friends = get_user_friends(user1)
+    return user2 in user1_friends['friends']
+
+def can_send_message(sender, recipient):
+    users = load_users()
+    recipient_data = users.get(recipient, {})
+    
+    # Eğer alıcı herkesten mesaj almayı kapattıysa
+    if not recipient_data.get('allow_messages_from_all', True):
+        # Sadece arkadaşlardan mesaj alabilir
+        return are_friends(sender, recipient)
+    
+    return True
+
 @app.route('/')
 def index():
     if 'username' in session:
@@ -74,7 +104,8 @@ def register():
             'profile_photo': None,
             'bio': '',
             'last_seen': datetime.now().isoformat(),
-            'status': 'online'
+            'status': 'online',
+            'allow_messages_from_all': True
         }
         
         save_users(users)
@@ -148,6 +179,10 @@ def send_message():
     
     if not recipient or not message:
         return jsonify({'success': False, 'error': 'Geçersiz veri'})
+    
+    # Mesaj gönderme yetkisi kontrolü
+    if not can_send_message(session['username'], recipient):
+        return jsonify({'success': False, 'error': 'Bu kişiye mesaj göndermek için arkadaş olmanız gerekiyor'})
     
     messages = load_messages()
     
@@ -276,7 +311,7 @@ def search_messages():
     return jsonify(results[:10])  # Limit to 10 results
 
 @app.route('/get_user_status/<username>')
-def get_user_status():
+def get_user_status(username):
     if 'username' not in session:
         return jsonify({'status': 'unknown'})
     
@@ -299,6 +334,171 @@ def get_user_status():
         })
     
     return jsonify({'status': 'unknown'})
+
+@app.route('/send_friend_request', methods=['POST'])
+def send_friend_request():
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Oturum açmanız gerekli'})
+    
+    data = request.get_json()
+    target_user = data.get('username')
+    current_user = session['username']
+    
+    if not target_user or target_user == current_user:
+        return jsonify({'success': False, 'error': 'Geçersiz kullanıcı'})
+    
+    users = load_users()
+    if target_user not in users:
+        return jsonify({'success': False, 'error': 'Kullanıcı bulunamadı'})
+    
+    friendships = load_friendships()
+    
+    # Mevcut arkadaşlık verilerini al
+    current_user_data = friendships.get(current_user, {'friends': [], 'sent_requests': [], 'received_requests': []})
+    target_user_data = friendships.get(target_user, {'friends': [], 'sent_requests': [], 'received_requests': []})
+    
+    # Zaten arkadaş mı kontrol et
+    if target_user in current_user_data['friends']:
+        return jsonify({'success': False, 'error': 'Zaten arkadaşsınız'})
+    
+    # Zaten istek gönderilmiş mi kontrol et
+    if target_user in current_user_data['sent_requests']:
+        return jsonify({'success': False, 'error': 'Zaten arkadaşlık isteği gönderilmiş'})
+    
+    # İsteği ekle
+    current_user_data['sent_requests'].append(target_user)
+    target_user_data['received_requests'].append(current_user)
+    
+    friendships[current_user] = current_user_data
+    friendships[target_user] = target_user_data
+    
+    save_friendships(friendships)
+    
+    return jsonify({'success': True, 'message': 'Arkadaşlık isteği gönderildi'})
+
+@app.route('/accept_friend_request', methods=['POST'])
+def accept_friend_request():
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Oturum açmanız gerekli'})
+    
+    data = request.get_json()
+    requester = data.get('username')
+    current_user = session['username']
+    
+    if not requester:
+        return jsonify({'success': False, 'error': 'Geçersiz kullanıcı'})
+    
+    friendships = load_friendships()
+    
+    current_user_data = friendships.get(current_user, {'friends': [], 'sent_requests': [], 'received_requests': []})
+    requester_data = friendships.get(requester, {'friends': [], 'sent_requests': [], 'received_requests': []})
+    
+    # İstek var mı kontrol et
+    if requester not in current_user_data['received_requests']:
+        return jsonify({'success': False, 'error': 'Arkadaşlık isteği bulunamadı'})
+    
+    # Arkadaş listelerine ekle
+    current_user_data['friends'].append(requester)
+    requester_data['friends'].append(current_user)
+    
+    # İstekleri kaldır
+    current_user_data['received_requests'].remove(requester)
+    requester_data['sent_requests'].remove(current_user)
+    
+    friendships[current_user] = current_user_data
+    friendships[requester] = requester_data
+    
+    save_friendships(friendships)
+    
+    return jsonify({'success': True, 'message': 'Arkadaşlık isteği kabul edildi'})
+
+@app.route('/reject_friend_request', methods=['POST'])
+def reject_friend_request():
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Oturum açmanız gerekli'})
+    
+    data = request.get_json()
+    requester = data.get('username')
+    current_user = session['username']
+    
+    if not requester:
+        return jsonify({'success': False, 'error': 'Geçersiz kullanıcı'})
+    
+    friendships = load_friendships()
+    
+    current_user_data = friendships.get(current_user, {'friends': [], 'sent_requests': [], 'received_requests': []})
+    requester_data = friendships.get(requester, {'friends': [], 'sent_requests': [], 'received_requests': []})
+    
+    # İstek var mı kontrol et
+    if requester not in current_user_data['received_requests']:
+        return jsonify({'success': False, 'error': 'Arkadaşlık isteği bulunamadı'})
+    
+    # İstekleri kaldır
+    current_user_data['received_requests'].remove(requester)
+    requester_data['sent_requests'].remove(current_user)
+    
+    friendships[current_user] = current_user_data
+    friendships[requester] = requester_data
+    
+    save_friendships(friendships)
+    
+    return jsonify({'success': True, 'message': 'Arkadaşlık isteği reddedildi'})
+
+@app.route('/remove_friend', methods=['POST'])
+def remove_friend():
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Oturum açmanız gerekli'})
+    
+    data = request.get_json()
+    friend_username = data.get('username')
+    current_user = session['username']
+    
+    if not friend_username:
+        return jsonify({'success': False, 'error': 'Geçersiz kullanıcı'})
+    
+    friendships = load_friendships()
+    
+    current_user_data = friendships.get(current_user, {'friends': [], 'sent_requests': [], 'received_requests': []})
+    friend_data = friendships.get(friend_username, {'friends': [], 'sent_requests': [], 'received_requests': []})
+    
+    # Arkadaş mı kontrol et
+    if friend_username not in current_user_data['friends']:
+        return jsonify({'success': False, 'error': 'Bu kişi arkadaş listenizde değil'})
+    
+    # Arkadaş listelerinden kaldır
+    current_user_data['friends'].remove(friend_username)
+    friend_data['friends'].remove(current_user)
+    
+    friendships[current_user] = current_user_data
+    friendships[friend_username] = friend_data
+    
+    save_friendships(friendships)
+    
+    return jsonify({'success': True, 'message': 'Arkadaş çıkarıldı'})
+
+@app.route('/get_friendship_data')
+def get_friendship_data():
+    if 'username' not in session:
+        return jsonify({})
+    
+    current_user = session['username']
+    user_data = get_user_friends(current_user)
+    
+    return jsonify(user_data)
+
+@app.route('/update_message_settings', methods=['POST'])
+def update_message_settings():
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Oturum açmanız gerekli'})
+    
+    data = request.get_json()
+    allow_messages_from_all = data.get('allow_messages_from_all', True)
+    
+    users = load_users()
+    users[session['username']]['allow_messages_from_all'] = allow_messages_from_all
+    save_users(users)
+    
+    return jsonify({'success': True, 'message': 'Mesaj ayarları güncellendi'})
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
