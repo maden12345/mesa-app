@@ -7,7 +7,7 @@ import hashlib
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'
+app.secret_key = 'chatnell-secret-key-2024'
 
 # Data storage files
 USERS_FILE = 'users.json'
@@ -72,7 +72,9 @@ def register():
             'email': email,
             'created_at': datetime.now().isoformat(),
             'profile_photo': None,
-            'bio': ''
+            'bio': '',
+            'last_seen': datetime.now().isoformat(),
+            'status': 'online'
         }
         
         save_users(users)
@@ -91,6 +93,9 @@ def login():
         
         if username in users and users[username]['password'] == hash_password(password):
             session['username'] = username
+            users[username]['last_seen'] = datetime.now().isoformat()
+            users[username]['status'] = 'online'
+            save_users(users)
             return redirect(url_for('dashboard'))
         else:
             flash('Geçersiz kullanıcı adı veya şifre!')
@@ -99,6 +104,12 @@ def login():
 
 @app.route('/logout')
 def logout():
+    if 'username' in session:
+        users = load_users()
+        if session['username'] in users:
+            users[session['username']]['status'] = 'offline'
+            users[session['username']]['last_seen'] = datetime.now().isoformat()
+            save_users(users)
     session.pop('username', None)
     return redirect(url_for('index'))
 
@@ -218,6 +229,76 @@ def edit_profile():
         return redirect(url_for('profile', username=current_user))
     
     return render_template('edit_profile.html', user_info=users[current_user])
+
+@app.route('/delete_message', methods=['POST'])
+def delete_message():
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Oturum açmanız gerekli'})
+    
+    data = request.get_json()
+    message_id = data.get('message_id')
+    
+    if message_id is None:
+        return jsonify({'success': False, 'error': 'Mesaj ID gerekli'})
+    
+    messages = load_messages()
+    
+    # Find and delete the message if user owns it
+    for i, msg in enumerate(messages):
+        if msg.get('id') == message_id and msg['sender'] == session['username']:
+            messages[i]['deleted'] = True
+            messages[i]['message'] = 'Bu mesaj silindi'
+            save_messages(messages)
+            return jsonify({'success': True})
+    
+    return jsonify({'success': False, 'error': 'Mesaj bulunamadı veya yetkiniz yok'})
+
+@app.route('/search_messages')
+def search_messages():
+    if 'username' not in session:
+        return jsonify([])
+    
+    query = request.args.get('q', '').lower()
+    recipient = request.args.get('recipient', '')
+    
+    if not query or not recipient:
+        return jsonify([])
+    
+    messages = load_messages()
+    results = []
+    
+    for msg in messages:
+        if (msg['sender'] == session['username'] and msg['recipient'] == recipient) or \
+           (msg['sender'] == recipient and msg['recipient'] == session['username']):
+            if query in msg['message'].lower() and not msg.get('deleted', False):
+                results.append(msg)
+    
+    return jsonify(results[:10])  # Limit to 10 results
+
+@app.route('/get_user_status/<username>')
+def get_user_status():
+    if 'username' not in session:
+        return jsonify({'status': 'unknown'})
+    
+    users = load_users()
+    if username in users:
+        last_seen = datetime.fromisoformat(users[username].get('last_seen', datetime.now().isoformat()))
+        now = datetime.now()
+        minutes_ago = (now - last_seen).total_seconds() / 60
+        
+        if minutes_ago < 5:
+            status = 'online'
+        elif minutes_ago < 30:
+            status = 'away'
+        else:
+            status = 'offline'
+        
+        return jsonify({
+            'status': status,
+            'last_seen': users[username].get('last_seen')
+        })
+    
+    return jsonify({'status': 'unknown'})
 
 @app.route('/static/<path:filename>')
 def static_files(filename):

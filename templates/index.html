@@ -2,37 +2,68 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="card" style="text-align: center;">
-    <h1 style="color: #667eea; margin-bottom: 30px;">Mesajlaşma Platformuna Hoş Geldiniz</h1>
-    <p style="font-size: 18px; color: #666; margin-bottom: 40px;">
-        Arkadaşlarınızla güvenli ve hızlı bir şekilde mesajlaşın!
+<div class="card" style="text-align: center; background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9)); backdrop-filter: blur(20px);">
+    <div style="font-size: 4rem; margin-bottom: 20px;">💬</div>
+    <h1 style="background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 3.5rem; font-weight: 800; margin-bottom: 20px;">
+        ChatNell'e Hoş Geldiniz
+    </h1>
+    <p style="font-size: 20px; color: #666; margin-bottom: 40px; line-height: 1.6;">
+        Yeni nesil mesajlaşma deneyimi! Arkadaşlarınızla güvenli, hızlı ve eğlenceli bir şekilde iletişim kurun.
     </p>
     
-    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-        <a href="{{ url_for('login') }}" class="btn" style="font-size: 16px; padding: 15px 30px;">
-            Giriş Yap
+    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px;">
+        <a href="{{ url_for('login') }}" class="btn" style="font-size: 18px; padding: 18px 35px;">
+            🚀 Giriş Yap
         </a>
-        <a href="{{ url_for('register') }}" class="btn" style="font-size: 16px; padding: 15px 30px;">
-            Kayıt Ol
+        <a href="{{ url_for('register') }}" class="btn btn-success" style="font-size: 18px; padding: 18px 35px;">
+            ✨ Kayıt Ol
         </a>
     </div>
 </div>
 
 <div class="card">
-    <h2 style="color: #667eea; margin-bottom: 20px;">Özellikler</h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-        <div style="text-align: center; padding: 20px;">
-            <h3 style="color: #333; margin-bottom: 10px;">🔒 Güvenli</h3>
-            <p style="color: #666;">Mesajlarınız güvenli bir şekilde saklanır</p>
+    <h2 style="background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 30px; font-size: 2rem; text-align: center;">🌟 Özellikler</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+        <div style="text-align: center; padding: 25px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border-radius: 15px; border: 2px solid rgba(102, 126, 234, 0.2);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">🔒</div>
+            <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.3rem;">Güvenli</h3>
+            <p style="color: #666; line-height: 1.6;">Mesajlarınız güvenli bir şekilde şifrelenir ve saklanır</p>
         </div>
-        <div style="text-align: center; padding: 20px;">
-            <h3 style="color: #333; margin-bottom: 10px;">⚡ Hızlı</h3>
-            <p style="color: #666;">Anlık mesajlaşma deneyimi</p>
+        <div style="text-align: center; padding: 25px; background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(46, 204, 113, 0.1)); border-radius: 15px; border: 2px solid rgba(39, 174, 96, 0.2);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">⚡</div>
+            <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.3rem;">Hızlı</h3>
+            <p style="color: #666; line-height: 1.6;">Anlık mesajlaşma ve gerçek zamanlı güncellemeler</p>
         </div>
-        <div style="text-align: center; padding: 20px;">
-            <h3 style="color: #333; margin-bottom: 10px;">👥 Kullanıcı Dostu</h3>
-            <p style="color: #666;">Basit ve sezgisel arayüz</p>
+        <div style="text-align: center; padding: 25px; background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.1)); border-radius: 15px; border: 2px solid rgba(231, 76, 60, 0.2);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">🎨</div>
+            <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.3rem;">Modern</h3>
+            <p style="color: #666; line-height: 1.6;">Kullanıcı dostu arayüz ve modern tasarım</p>
+        </div>
+        <div style="text-align: center; padding: 25px; background: linear-gradient(135deg, rgba(241, 196, 15, 0.1), rgba(243, 156, 18, 0.1)); border-radius: 15px; border: 2px solid rgba(241, 196, 15, 0.2);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">👥</div>
+            <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.3rem;">Sosyal</h3>
+            <p style="color: #666; line-height: 1.6;">Profil fotoğrafları, durum mesajları ve daha fazlası</p>
+        </div>
+        <div style="text-align: center; padding: 25px; background: linear-gradient(135deg, rgba(155, 89, 182, 0.1), rgba(142, 68, 173, 0.1)); border-radius: 15px; border: 2px solid rgba(155, 89, 182, 0.2);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">🔍</div>
+            <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.3rem;">Akıllı</h3>
+            <p style="color: #666; line-height: 1.6;">Mesaj arama, emoji desteği ve gelişmiş özellikler</p>
+        </div>
+        <div style="text-align: center; padding: 25px; background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(41, 128, 185, 0.1)); border-radius: 15px; border: 2px solid rgba(52, 152, 219, 0.2);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">📱</div>
+            <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.3rem;">Responsive</h3>
+            <p style="color: #666; line-height: 1.6;">Tüm cihazlarda mükemmel çalışır</p>
         </div>
     </div>
+</div>
+
+<div class="card" style="text-align: center; background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));">
+    <h3 style="color: #2c3e50; margin-bottom: 20px; font-size: 1.5rem;">🚀 Hemen Başlayın!</h3>
+    <p style="color: #666; margin-bottom: 25px; font-size: 16px;">
+        ChatNell'in tüm özelliklerinden yararlanmak için hemen kayıt olun ve yeni nesil mesajlaşma deneyimini yaşayın.
+    </p>
+    <a href="{{ url_for('register') }}" class="btn btn-success" style="font-size: 16px; padding: 15px 30px;">
+        ✨ Ücretsiz Kayıt Ol
+    </a>
 </div>
 {% endblock %}
