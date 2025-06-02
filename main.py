@@ -155,11 +155,10 @@ def dashboard():
     return render_template('dashboard.html', users=user_list)
 
 @app.route('/chat/<recipient>')
-def chat():
+def chat(recipient):
     if 'username' not in session:
         return redirect(url_for('login'))
     
-    recipient = request.view_args['recipient']
     users = load_users()
     
     if recipient not in users:
@@ -200,11 +199,10 @@ def send_message():
     return jsonify({'success': True})
 
 @app.route('/get_messages/<recipient>')
-def get_messages():
+def get_messages(recipient):
     if 'username' not in session:
         return jsonify([])
     
-    recipient = request.view_args['recipient']
     messages = load_messages()
     
     # Get conversation between current user and recipient
