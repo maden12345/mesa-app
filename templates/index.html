@@ -1,0 +1,38 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="text-align: center;">
+    <h1 style="color: #667eea; margin-bottom: 30px;">Mesajlaşma Platformuna Hoş Geldiniz</h1>
+    <p style="font-size: 18px; color: #666; margin-bottom: 40px;">
+        Arkadaşlarınızla güvenli ve hızlı bir şekilde mesajlaşın!
+    </p>
+    
+    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+        <a href="{{ url_for('login') }}" class="btn" style="font-size: 16px; padding: 15px 30px;">
+            Giriş Yap
+        </a>
+        <a href="{{ url_for('register') }}" class="btn" style="font-size: 16px; padding: 15px 30px;">
+            Kayıt Ol
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <h2 style="color: #667eea; margin-bottom: 20px;">Özellikler</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        <div style="text-align: center; padding: 20px;">
+            <h3 style="color: #333; margin-bottom: 10px;">🔒 Güvenli</h3>
+            <p style="color: #666;">Mesajlarınız güvenli bir şekilde saklanır</p>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+            <h3 style="color: #333; margin-bottom: 10px;">⚡ Hızlı</h3>
+            <p style="color: #666;">Anlık mesajlaşma deneyimi</p>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+            <h3 style="color: #333; margin-bottom: 10px;">👥 Kullanıcı Dostu</h3>
+            <p style="color: #666;">Basit ve sezgisel arayüz</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

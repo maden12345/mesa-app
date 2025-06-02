@@ -12,6 +12,7 @@ modules = ["python-3.8"]
 # Specifies which nix channel to use when building the environment.
 [nix]
 channel = "stable-21_11"
+packages = ["gdb"]
 
 [env]
 
@@ -24,3 +25,15 @@ language = "python3"
 # for Python repos imported from GitHub
 [gitHubImport]
 requiredFiles = [".replit", "replit.nix", ".config", "venv"]
+
+[workflows]
+runButton = "Start Messaging Platform"
+
+[[workflows.workflow]]
+name = "Start Messaging Platform"
+author = 43402561
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"

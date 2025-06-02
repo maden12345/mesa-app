@@ -1,0 +1,38 @@
+
+{% extends "base.html" %}
+
+{% block title %}Ana Sayfa - Mesajlaşma Platformu{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 style="color: #667eea; margin-bottom: 30px;">Kullanıcı Listesi</h2>
+    
+    {% if users %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+            {% for user in users %}
+                <div style="border: 2px solid #eee; border-radius: 8px; padding: 20px; text-align: center; transition: all 0.3s; cursor: pointer;" 
+                     onmouseover="this.style.borderColor='#667eea'; this.style.transform='translateY(-2px)'" 
+                     onmouseout="this.style.borderColor='#eee'; this.style.transform='translateY(0)'">
+                    <h3 style="color: #333; margin-bottom: 15px;">{{ user }}</h3>
+                    <a href="{{ url_for('chat', recipient=user) }}" class="btn">Mesaj Gönder</a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <h3>Henüz başka kullanıcı yok</h3>
+            <p>Arkadaşlarınızı davet edin!</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3 style="color: #667eea; margin-bottom: 20px;">Nasıl Kullanılır?</h3>
+    <ol style="color: #666; line-height: 1.6;">
+        <li>Yukarıdaki listeden mesaj göndermek istediğiniz kullanıcıyı seçin</li>
+        <li>"Mesaj Gönder" butonuna tıklayın</li>
+        <li>Mesajınızı yazın ve gönderin</li>
+        <li>Karşılıklı mesajlaşmanın keyfini çıkarın!</li>
+    </ol>
+</div>
+{% endblock %}
