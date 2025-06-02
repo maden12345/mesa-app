@@ -14,7 +14,10 @@
                      onmouseover="this.style.borderColor='#667eea'; this.style.transform='translateY(-2px)'" 
                      onmouseout="this.style.borderColor='#eee'; this.style.transform='translateY(0)'">
                     <h3 style="color: #333; margin-bottom: 15px;">{{ user }}</h3>
-                    <a href="{{ url_for('chat', recipient=user) }}" class="btn">Mesaj Gönder</a>
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <a href="{{ url_for('profile', username=user) }}" class="btn" style="background: #28a745;">👤 Profil</a>
+                        <a href="{{ url_for('chat', recipient=user) }}" class="btn">💬 Mesaj</a>
+                    </div>
                 </div>
             {% endfor %}
         </div>

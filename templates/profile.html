@@ -1,0 +1,67 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user }} - Profil{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h2 style="color: #667eea; margin: 0;">{{ profile_user }}'in Profili</h2>
+        <a href="{{ url_for('dashboard') }}" class="btn">← Geri Dön</a>
+    </div>
+    
+    <div style="display: flex; gap: 30px; align-items: flex-start;">
+        <div style="text-align: center;">
+            {% if user_info.profile_photo %}
+                <img src="{{ url_for('static_files', filename=user_info.profile_photo) }}" 
+                     alt="{{ profile_user }}" 
+                     style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid #667eea;">
+            {% else %}
+                <div style="width: 150px; height: 150px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border: 3px solid #667eea;">
+                    <span style="font-size: 48px; color: #999;">👤</span>
+                </div>
+            {% endif %}
+            
+            {% if is_own_profile %}
+                <div style="margin-top: 15px;">
+                    <a href="{{ url_for('edit_profile') }}" class="btn" style="font-size: 14px; padding: 8px 16px;">Profili Düzenle</a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div style="flex: 1;">
+            <h3 style="color: #333; margin-bottom: 10px;">{{ profile_user }}</h3>
+            <p style="color: #666; margin-bottom: 15px;"><strong>E-posta:</strong> {{ user_info.email }}</p>
+            
+            {% if user_info.bio %}
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #667eea; margin-bottom: 10px;">Hakkında</h4>
+                    <p style="color: #666; line-height: 1.6; background: #f9f9f9; padding: 15px; border-radius: 8px;">{{ user_info.bio }}</p>
+                </div>
+            {% endif %}
+            
+            <p style="color: #999; font-size: 14px;">
+                <strong>Katılma Tarihi:</strong> {{ user_info.created_at[:10] }}
+            </p>
+            
+            {% if not is_own_profile %}
+                <div style="margin-top: 20px;">
+                    <a href="{{ url_for('chat', recipient=profile_user) }}" class="btn">💬 Mesaj Gönder</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if is_own_profile %}
+<div class="card">
+    <h3 style="color: #667eea; margin-bottom: 20px;">Profilini Nasıl Düzenlersin?</h3>
+    <ol style="color: #666; line-height: 1.6;">
+        <li>"Profili Düzenle" butonuna tıkla</li>
+        <li>Profil fotoğrafını seç (PNG, JPG, JPEG, GIF formatları desteklenir)</li>
+        <li>Hakkında bölümünü doldur</li>
+        <li>Değişiklikleri kaydet</li>
+    </ol>
+</div>
+{% endif %}
+{% endblock %}

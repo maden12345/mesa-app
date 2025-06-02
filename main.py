@@ -4,6 +4,7 @@ import os
 import json
 from datetime import datetime
 import hashlib
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
@@ -11,6 +12,14 @@ app.secret_key = 'your-secret-key-here'
 # Data storage files
 USERS_FILE = 'users.json'
 MESSAGES_FILE = 'messages.json'
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+# Create upload directory if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs('static', exist_ok=True)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def load_users():
     if os.path.exists(USERS_FILE):
@@ -35,6 +44,10 @@ def save_messages(messages):
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/')
 def index():
     if 'username' in session:
@@ -57,7 +70,9 @@ def register():
         users[username] = {
             'password': hash_password(password),
             'email': email,
-            'created_at': datetime.now().isoformat()
+            'created_at': datetime.now().isoformat(),
+            'profile_photo': None,
+            'bio': ''
         }
         
         save_users(users)
@@ -157,6 +172,56 @@ def get_messages():
     conversation.sort(key=lambda x: x['timestamp'])
     
     return jsonify(conversation)
+
+@app.route('/profile/<username>')
+def profile(username):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    users = load_users()
+    
+    if username not in users:
+        flash('Kullanıcı bulunamadı!')
+        return redirect(url_for('dashboard'))
+    
+    user_info = users[username]
+    is_own_profile = username == session['username']
+    
+    return render_template('profile.html', 
+                         profile_user=username, 
+                         user_info=user_info,
+                         is_own_profile=is_own_profile)
+
+@app.route('/edit_profile', methods=['GET', 'POST'])
+def edit_profile():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    users = load_users()
+    current_user = session['username']
+    
+    if request.method == 'POST':
+        bio = request.form.get('bio', '')
+        
+        # Handle profile photo upload
+        if 'profile_photo' in request.files:
+            file = request.files['profile_photo']
+            if file and file.filename != '' and allowed_file(file.filename):
+                filename = secure_filename(f"{current_user}_{file.filename}")
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                users[current_user]['profile_photo'] = f"uploads/{filename}"
+        
+        users[current_user]['bio'] = bio
+        save_users(users)
+        flash('Profil başarıyla güncellendi!')
+        return redirect(url_for('profile', username=current_user))
+    
+    return render_template('edit_profile.html', user_info=users[current_user])
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return app.send_static_file(filename)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

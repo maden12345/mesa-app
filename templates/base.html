@@ -145,6 +145,7 @@
             <h1>Mesajlaşma Platformu</h1>
             <div class="nav">
                 <span class="user-info">Hoş geldin, {{ session.username }}!</span>
+                <a href="{{ url_for('profile', username=session.username) }}" class="btn">👤 Profilim</a>
                 <a href="{{ url_for('dashboard') }}" class="btn">Ana Sayfa</a>
                 <a href="{{ url_for('logout') }}" class="btn btn-danger">Çıkış</a>
             </div>
